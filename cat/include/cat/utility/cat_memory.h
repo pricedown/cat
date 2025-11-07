@@ -108,6 +108,11 @@ cat_decl void* cat_memory_alloc(size_t const block_size);
 //! \return True if successful.
 cat_decl bool cat_memory_dealloc(void* const p_block);
 
+typedef struct cat_memory_handle_t* phandle_t;
+
+phandle_t test_alloc(size_t n);
+void test_dealloc(phandle_t handle);
+void* test_getptr(phandle_t);
 
 cat_interface_end;
 
