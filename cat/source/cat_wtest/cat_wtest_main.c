@@ -49,39 +49,53 @@ static ptr_t cat_dylib_symbol(HMODULE const hModule, cstr_t const symbol)
 
 extern int cat_test_all(int const argc, char const* const argv[]);
 
+#include <stdio.h>
+#include <inttypes.h>
+
+#define NUM_WORKERS 4
+
 typedef struct manager_t {
-    int something;
+    mtx_t lock;
+
+    int64_t* summands;
+    size_t summands_count;
+    int64_t sum; // result of work
 } manager_t;
 
 
 typedef struct worker_t {
+    thrd_t thread;
     manager_t* manager;
-    size_t id;
+    uint64_t id;
+
+    int result;
+    int pad;
 } worker_t;
-
-#include <stdio.h>
-#include <inttypes.h>
-
 
 int worker_thread_work(worker_t* worker)
 {
-    char name[32] = { 0 };
-    uint64_t id = 0;
-    bool condition_met = false;
-
     assert(worker);
 
-    id = worker->id;
-    snprintf(name, sizeof(name), "worker_thread_%"PRIu64, id);
+    // Rename worker
+    char name[32] = { 0 };
+    snprintf(name, sizeof(name), "worker_thread_%"PRIu64, worker->id);
     cat_thread_rename(name);
 
-    while (!condition_met)
-    {
-        // TODO: do something with data
-        unused(worker);
-    }
+    // Identify section to compute
+    size_t start = (worker->id) * worker->manager->summands_count / NUM_WORKERS;
+    size_t end = (worker->id + 1) * worker->manager->summands_count / NUM_WORKERS;
 
-    return 0;
+    // Compute the partial sum
+    size_t partial_sum = 0;
+    for (size_t i = start; i < end; i++)
+        partial_sum += worker->manager->summands[i];
+
+    // Safely update manager with sum
+    mtx_lock(&worker->manager->lock);
+    worker->manager->sum += partial_sum;
+    mtx_unlock(&worker->manager->lock);
+
+    return (int)partial_sum;
 }
 
 int worker_thread_entry(void* arg)
@@ -89,42 +103,41 @@ int worker_thread_entry(void* arg)
     return worker_thread_work((worker_t*)arg);
 }
 
+void spawn_worker(worker_t* worker, manager_t* manager, uint64_t id) {
+    worker->manager = manager;
+    worker->id = id;
+    thrd_create(&worker->thread, &worker_thread_entry, worker);
+}
+
+__declspec(spectre(nomitigation))
 void test_tasks(void)
 {
-    bool condition_met = false;
+    // Create manager
+    manager_t manager;
+    mtx_init(&manager.lock, 0);
+    manager.summands_count = 1024;
+    manager.summands = malloc(manager.summands_count * sizeof * manager.summands);
+    for (size_t i = 0; i < manager.summands_count; i++)
+        manager.summands[i] = 1;
+    manager.sum = 0;
 
-    manager_t manager = { 0 };
+    // Spawn workers
+    worker_t workers[NUM_WORKERS];
+    for (int i = 0; i < NUM_WORKERS; i++)
+        spawn_worker(&workers[i], &manager, (uint64_t)i);
 
-    thrd_t worker_thread_0 = { 0 };
-    thrd_t worker_thread_1 = { 0 };
-    thrd_t worker_thread_2 = { 0 };
-    thrd_t worker_thread_3 = { 0 };
-    worker_t worker_0 = { &manager };
-    worker_t worker_1 = { &manager };
-    worker_t worker_2 = { &manager };
-    worker_t worker_3 = { &manager };
+    // Wait for workers to finish
+    for (int i = 0; i < NUM_WORKERS; i++)
+        thrd_join(workers[i].thread, &workers[i].result);
 
-    int result_0;
-    int result_1;
-    int result_2;
-    int result_3;
+    // Print total sum
+    printf("\nTotal sum = %"PRId64"!\n", manager.sum);
+    printf("Enter to exit\n");
+    getchar();
 
-    thrd_create(&worker_thread_0, &worker_thread_entry, &worker_0);
-    thrd_create(&worker_thread_0, &worker_thread_entry, &worker_1);
-    thrd_create(&worker_thread_0, &worker_thread_entry, &worker_2);
-    thrd_create(&worker_thread_0, &worker_thread_entry, &worker_3);
-
-    while (!condition_met)
-    {
-        
-    }
-
-    thrd_join(worker_thread_0, &result_0);
-    thrd_join(worker_thread_1, &result_1);
-    thrd_join(worker_thread_2, &result_2);
-    thrd_join(worker_thread_3, &result_3);
-
-    return; // return some datas
+    // Destroy manager
+    mtx_destroy(&manager.lock);
+    free(manager.summands);
 }
 
 

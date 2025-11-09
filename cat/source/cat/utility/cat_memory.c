@@ -160,10 +160,10 @@ cat_impl bool cat_memory_dealloc(void* const p_block)
     return false;
 }
 
-phandle_t test_alloc(size_t n)
-{
-    return phandle_t();
-}
+//phandle_t test_alloc(size_t n)
+//{
+//    return phandle_t();
+//}
 
 
 #include "cat/utility/cat_time.h"
