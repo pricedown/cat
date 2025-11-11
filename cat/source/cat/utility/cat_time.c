@@ -44,34 +44,34 @@ cat_implementation_begin;
 cat_impl cat_time_rate_t cat_platform_time_rate(void)
 {
 #ifdef CAT_PLATFORM_TIME_WIN
-    LARGE_INTEGER pf = { 0 };
-    if (!QueryPerformanceFrequency(&pf))
-        return 0;
-    return pf.LowPart;
+	LARGE_INTEGER pf = { 0 };
+	if (!QueryPerformanceFrequency(&pf))
+		return 0;
+	return pf.LowPart;
 #else // #ifdef CAT_PLATFORM_TIME_WIN
-    return NS_PER_S;
+	return NS_PER_S;
 #endif // #else // #ifdef CAT_PLATFORM_TIME_WIN
 }
 
 cat_impl cat_time_t cat_platform_time(void)
 {
 #ifdef CAT_PLATFORM_TIME_WIN
-    LARGE_INTEGER pc = { 0 };
-    if (!QueryPerformanceCounter(&pc))
-        return 0;
-    return pc.QuadPart;
+	LARGE_INTEGER pc = { 0 };
+	if (!QueryPerformanceCounter(&pc))
+		return 0;
+	return pc.QuadPart;
 #else // #ifdef CAT_PLATFORM_TIME_WIN
-    struct timespec ts = { 0 };
-    if (timespec_get(&ts, TIME_UTC) != TIME_UTC)
-        return 0;
-    return (ts.tv_sec * NS_PER_S + ts.tv_nsec);
+	struct timespec ts = { 0 };
+	if (timespec_get(&ts, TIME_UTC) != TIME_UTC)
+		return 0;
+	return (ts.tv_sec * NS_PER_S + ts.tv_nsec);
 #endif // #else // #ifdef CAT_PLATFORM_TIME_WIN
 }
 
 cat_impl void cat_platform_sleep(cat_time_t const duration)
 {
-    cat_time_t const t = cat_platform_time() + duration;
-    while (cat_platform_time() < t);
+	cat_time_t const t = cat_platform_time() + duration;
+	while (cat_platform_time() < t);
 }
 
 
@@ -80,16 +80,65 @@ cat_impl void cat_platform_sleep(cat_time_t const duration)
 
 cat_noinl void cat_time_test(void)
 {
-    cat_time_rate_t const volatile t_rate = cat_platform_time_rate();
-    cat_time_t const volatile t0 = cat_platform_time();
-    cat_time_t volatile dt = 0;
+	cat_time_rate_t const volatile t_rate = cat_platform_time_rate();
+	cat_time_t const volatile t0 = cat_platform_time();
+	cat_time_t volatile dt = 0;
 
-    cat_platform_sleep(t_rate);
-    {
-        dt = cat_platform_time() - t0;
-        printf("\nTime: \n    platform rate=%"PRIu32" t0=%"PRIi64" dt=%"PRIi64, t_rate, t0, dt);
-    }
-    cat_platform_sleep(t_rate);
+	cat_platform_sleep(t_rate);
+	{
+		dt = cat_platform_time() - t0;
+		printf("\nTime: \n    platform rate=%"PRIu32" t0=%"PRIi64" dt=%"PRIi64, t_rate, t0, dt);
+	}
+	cat_platform_sleep(t_rate);
+}
+
+typedef struct cat_time_sample_s {
+	cat_time_t timestamp;
+	cat_time_t recorded_value;
+} cat_time_sample_t;
+
+typedef struct sliding_window_s {
+	cat_time_t window_duration;
+	cat_time_sample_t* samples;
+	size_t head;
+	size_t tail;
+	size_t sample_count;
+	size_t max_sample_count;
+	cat_time_t total_sample_times;
+} sliding_window_t;
+
+void add_sample(sliding_window_t* sliding_window, cat_time_sample_t sample)
+{
+	if (sliding_window->sample_count == sliding_window->max_sample_count)
+	{
+		// Expand the array to accommodate new samples
+	}
+
+	// Add the sample
+
+
+	// Remove tail samples if they're [duration] away from the head
+	// Maybe wrap in its own update function because otherwise it would only update when you add a sample
+}
+
+void update_window_tail(sliding_window_t* window)
+{
+	cat_time_t const volatile current_time_seconds = cat_platform_time() / cat_platform_time_rate();
+
+	bool br = false;
+	while (!br)
+	{
+		cat_time_t diff = current_time_seconds - window->samples[window->tail].recorded_value;
+		if (diff > window->window_duration) 
+		{
+			window->tail++;
+		}
+		else 
+		{
+			br = true;
+		}
+	}
+	// HI JOE I AM GRABBING A QUICK BITE AT IDX BRB
 }
 
 
