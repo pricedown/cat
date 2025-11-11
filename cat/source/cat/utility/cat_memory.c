@@ -160,6 +160,11 @@ cat_impl bool cat_memory_dealloc(void* const p_block)
     return false;
 }
 
+//phandle_t test_alloc(size_t n)
+//{
+//    return phandle_t();
+//}
+
 
 #include "cat/utility/cat_time.h"
 #include "cat/utility/cat_console.h"
@@ -189,6 +194,20 @@ cat_noinl void cat_memory_test(void)
     cat_free(block_rh);
     block_rh = NULL;
 }
+
+//typedef struct cat_memory_handle_t {
+//    void* p;
+//} cat_memory_handle_t;
+//
+//phandle_t test_alloc(size_t n)
+//{
+//    
+//}
+//
+//void test_dealloc(phandle_t handle)
+//{
+//
+//}
 
 
 cat_implementation_end;
