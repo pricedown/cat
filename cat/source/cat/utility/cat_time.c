@@ -92,11 +92,14 @@ cat_noinl void cat_time_test(void)
 	cat_platform_sleep(t_rate);
 }
 
+// This struct contains a single sample
+// contains the time stamp and the value at the time stamp
 typedef struct cat_time_sample_s {
 	cat_time_t timestamp;
 	cat_time_t recorded_value;
 } cat_time_sample_t;
 
+// 
 typedef struct sliding_window_s {
 	cat_time_t window_duration;
 	cat_time_sample_t* samples;
@@ -107,7 +110,7 @@ typedef struct sliding_window_s {
 	cat_time_t total_sample_times;
 } sliding_window_t;
 
-void add_sample(sliding_window_t* sliding_window, cat_time_sample_t sample)
+void add_sample(sliding_window_t* sliding_window)
 {
 	if (sliding_window->sample_count == sliding_window->max_sample_count)
 	{
@@ -138,7 +141,6 @@ void update_window_tail(sliding_window_t* window)
 			br = true;
 		}
 	}
-	// HI JOE I AM GRABBING A QUICK BITE AT IDX BRB
 }
 
 

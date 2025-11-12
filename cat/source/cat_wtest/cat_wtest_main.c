@@ -72,6 +72,55 @@ typedef struct worker_t {
     int pad;
 } worker_t;
 
+#define TEST_PASS_STR "TEST PASSED"
+#define TEST_FAIL_STR "TEST FAILED"
+
+typedef float vec3f[3];
+typedef float vec2f[2];
+typedef int vec3i[3];
+typedef int vec2i[2];
+
+// this is defining a type of function that accepts two parameters
+// typedef is a synonym for an existing type
+typedef float (*testf_vec3f_vec3f)(const vec3f, const vec3f);
+typedef float* (*testfp_vec3f_vec3f_vec3f)(vec3f, const vec3f, const vec3f);
+
+float dotProduct(const vec3f v1, const vec3f v2) {
+    return (v1[0] * v2[0]) + (v1[1] * v2[1]) + (v1[2] + v1[2]);
+}
+// cross product isnt finished it doesnt actually evaluate correctly
+float* crossProduct(vec3f result, const vec3f v1, const vec3f v2) {
+    result[0] = v1[0] + v2[0];
+
+    return result;
+}
+
+// defining a function pointer
+// this wouldnt really make sense? what if you have a function with multiple parameters?
+float(*initTest_f_v3f_v3f)(float*, float*) = crossProduct;
+float(*initTest_fp_v3f_v3f_v3f)(float*, float*, float*) = crossProduct;
+
+#define testFunction(X) _Generic((X), \
+    testf_vec3f_vec3f: initTest_f_v3f_v3f,\
+    testfp_vec3f_vec3f_vec3f: initTest_fp_v3f_v3f_v3f\
+    )(X)
+//int(*testFuncFloat)(float*, float*) = dotProduct;
+
+// the _Generic keyword takes
+// _Generic(controlling_expression, association_list)
+// controlling_expression is a type defined at compile time
+// association_list is every 
+
+// this is a struct that encapsulates one test object, make something iterate through test objects and call them all and collect results
+typedef struct test_t {
+    void* func;
+    void* expected;
+    void* result;
+} test_t;
+
+// test_t 
+// 
+
 int worker_thread_work(worker_t* worker)
 {
     assert(worker);
@@ -107,6 +156,17 @@ void spawn_worker(worker_t* worker, manager_t* manager, uint64_t id) {
     worker->manager = manager;
     worker->id = id;
     thrd_create(&worker->thread, &worker_thread_entry, worker);
+}
+
+void test_unit_tests(void) 
+{
+    // this would be taken from a file reader or something
+
+    //test_t testA;
+    //test_t testB;
+    //test_t testC;
+
+
 }
 
 __declspec(spectre(nomitigation))
@@ -174,6 +234,7 @@ int WINAPI WinMain(
         cat_dylib_unload(dylib);
     }
 
+    test_unit_tests();
     test_tasks();
 
     cat_console_destroy();

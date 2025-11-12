@@ -56,6 +56,9 @@
     <ClInclude Include="..\..\..\include\cat\utility\cat_thread.h">
       <Filter>Header Files\utility</Filter>
     </ClInclude>
+    <ClInclude Include="cat_tests.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\source\cat\cat_platform.inl">
