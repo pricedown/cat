@@ -108,25 +108,54 @@ typedef struct unit_test_t {
     int (*test)(void* func, void* args, void* expected);
 } unit_test_t;
 
-float runVec3Tests(float* in1, float* in2)
+bool initTest_f_v3f_v3f(testf_vec3f_vec3f* ptr) 
+{
+    ptr = malloc(sizeof(testf_vec3f_vec3f));
+}
+
+bool initTest_fp_v3f_v3f_v3f(testfp_vec3f_vec3f_vec3f* ptr) 
+{
+    ptr = malloc(sizeof(testfp_vec3f_vec3f_vec3f));
+}
+
+bool execTest_f_v3f_v3f(testf_vec3f_vec3f* ptr) 
 {
 
 }
 
-float runVec3OutTests(float* out, float* in1, float* in2)
+bool execTest_fp_v3f_v3f_v3f(testfp_vec3f_vec3f_vec3f* ptr)
 {
 
 }
 
-// defining a function pointer
-// this wouldnt really make sense? what if you have a function with multiple parameters?
-float(*initTest_f_v3f_v3f)(float*, float*) = runVec3Tests;
-float(*initTest_fp_v3f_v3f_v3f)(float*, float*, float*) = runVec3OutTests;
+bool deallocTest_f_v3f_v3f(testf_vec3f_vec3f ptr)
+{
+    free(ptr);
+}
 
-#define testFunction(X) _Generic((X), \
+bool deallocTest_fp_v3f_v3f_v3f(testfp_vec3f_vec3f_vec3f* ptr)
+{
+    free(ptr);
+}
+
+float(*initTest_f_v3f_v3f)(float*, float*);
+float(*initTest_fp_v3f_v3f_v3f)(float*, float*, float*);
+
+#define initializeTest(X) _Generic((X), \
     testf_vec3f_vec3f: initTest_f_v3f_v3f,\
     testfp_vec3f_vec3f_vec3f: initTest_fp_v3f_v3f_v3f\
     )(X)
+
+#define executeTest(X) _Generic((X), \
+    testf_vec3f_vec3f: execTest_f_v3f_v3f,\
+    testfp_vec3f_vec3f_vec3f: execTest_fp_v3f_v3f_v3f \
+    )(X)
+
+#define cleanTest(X) _Generic((X),\
+    testf_vec3f_vec3f: deallocTest_f_v3f_v3f, \
+    testfp_vec3f_vec3f_vec3f: deallocTest_fp_v3f_v3f_v3f \
+    )(X)
+    
 
 int worker_thread_work(worker_t* worker)
 {
