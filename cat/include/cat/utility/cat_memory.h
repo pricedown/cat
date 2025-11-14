@@ -27,6 +27,27 @@
 
 cat_interface_begin;
 
+typedef struct cat_pool_node_s {
+	cat_pool_node_t* next;
+	cat_pool_node_t* prev;
+	char* file;
+	// uint32_t line
+	// uint32_t mode
+	size_t size;
+	uint8_t data[];
+} cat_pool_node_t;
+
+static uint8_t* g_pool_base = NULL;
+static size_t   g_pool_size = 0;
+static cat_pool_node_t* g_pool_head = NULL;
+
+// handle stuff
+typedef struct cat_memory_handle_t
+{
+	void* p;
+	size_t size;
+} cat_memory_handle_t;
+
 
 //! \fn cat_memset
 //! \brief Set all bytes in block to a specified byte value.

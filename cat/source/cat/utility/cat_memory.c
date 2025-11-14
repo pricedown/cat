@@ -128,16 +128,38 @@ cat_impl void cat_free(void* const p_block)
 
 cat_impl bool cat_memory_pool_create(size_t const pool_size)
 {
-    assert_or_bail(pool_size) false;
-    
-    //****TO-DO-MEMORY: allocate and initialize pool.
+	assert_or_bail(pool_size) false;
 
-    return false;
+	// Skip if already initialized
+	if (g_pool_base != NULL) return false;
+
+	g_pool_base = (uint8_t*)malloc(pool_size);
+	if (!g_pool_base) return false;
+
+	g_pool_size = pool_size;
+
+	// Initialize a single large free node
+	g_pool_head = (cat_pool_node_t*)g_pool_base;
+
+	g_pool_head->next = NULL;
+	g_pool_head->prev = NULL;
+	g_pool_head->file = NULL;
+	g_pool_head->size = pool_size - sizeof(cat_pool_node_t);
+
+	return false;
 }
 
 cat_impl bool cat_memory_pool_destroy(void)
 {
     //****TO-DO-MEMORY: safely deallocate pool allocated above.
+
+    if (!g_pool_base)
+        return false;
+
+    free(g_pool_base);
+    g_pool_base = NULL;
+    g_pool_head = NULL;
+    g_pool_size = 0;
 
     return false;
 }
