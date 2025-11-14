@@ -87,9 +87,9 @@ float dotProduct(const vec3f v1, const vec3f v2) {
 }
 
 float* crossProduct(vec3f result, const vec3f v1, const vec3f v2) {
-    result[0] = (v1[1] + v2[2]) - (v1[2] * v2[1]);
-    result[1] = (v1[2] + v2[0]) - (v1[0] * v2[2]);
-    result[2] = (v1[0] + v2[1]) - (v1[1] * v2[0]);
+    result[0] = (v1[1] * v2[2]) - (v1[2] * v2[1]);
+    result[1] = (v1[2] * v2[0]) - (v1[0] * v2[2]);
+    result[2] = (v1[0] * v2[1]) - (v1[1] * v2[0]);
 
     return result;
 }
@@ -114,9 +114,7 @@ bool execTest_f_v3f_v3f(testf_vec3f_vec3f ptr, ...)
 {
     va_list args;
     va_start(args, ptr);
-    float expected = va_arg(args, float);
-    //vec3f v1 = *va_arg(args, float*);
-    //vec3f v2 = *va_arg(args, float*);
+    double expected = va_arg(args, double); // we have to retrieve it as a double because va_arg doesn't like floats for some reason
     float* v1 = va_arg(args, float*);
     float* v2 = va_arg(args, float*);
 
@@ -130,7 +128,7 @@ bool execTest_fp_v3f_v3f_v3f(testfp_vec3f_vec3f_vec3f ptr, ...)
 {
     // collect arguments from ...
     va_list args;
-    va_start(args, 2);
+    va_start(args, ptr);
     float* expected = va_arg(args, float*);
     float* out = va_arg(args, float*);
     float* v1 = va_arg(args, float*);
@@ -139,8 +137,7 @@ bool execTest_fp_v3f_v3f_v3f(testfp_vec3f_vec3f_vec3f ptr, ...)
 
     float* result = (*ptr)(out, v1, v2);
 
-    // check if all parameters are equal
-    return (expected == result);
+    return (expected[0] == result[0] && expected[1] == result[1] && expected[2] == result[2]);
 }
 
 // the idea for architecting this was from professor buckstein's office hours
@@ -167,19 +164,33 @@ void test_unit_tests(void)
 
     vec3f v1 = { 2, 3, 5 };
     vec3f v2 = { 4, 1, 2 };
-    float expected = 21;
+    float expected = 21.0f;
 
     testf_vec3f_vec3f dot = dotProduct;
     testfp_vec3f_vec3f_vec3f cross = crossProduct;
 
-    executeTest(dot, expected, v1, v2);
+    printf("\nDot Test: ");
+    if (executeTest(dot, expected, v1, v2)) {
+        printf(TEST_PASS_STR);
+    }
+    else {
+        printf(TEST_FAIL_STR);
+    }
 
-    vec3f v1_2 = { 0, 1, 0 };
-    vec3f v2_2 = { 1, 0, 0 };
-    vec3f expected_2 = {0, 0, -1 };
+    vec3f v1_2 = { .0f, 1.0f, .0f };
+    vec3f v2_2 = { 1.0f, .0f, .0f };
+    vec3f expected_2 = { .0f, .0f, -1.0f };
     vec3f out = { 0, 0, 0 };
 
-    executeTest(cross, expected_2, out, v1_2, v2_2);
+    printf("\nCross Test: ");
+    if (executeTest(cross, expected_2, out, v1_2, v2_2)) {
+        printf(TEST_PASS_STR);
+    }
+    else {
+        printf(TEST_FAIL_STR);
+    }
+
+
 }
 
 int worker_thread_work(worker_t* worker)
