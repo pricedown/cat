@@ -80,15 +80,17 @@ typedef float vec3f[3];
 // this is defining a type of function that accepts two parameters
 // typedef is a synonym for an existing type
 typedef float (*testf_vec3f_vec3f)(const vec3f, const vec3f);
-typedef float* (*testfp_vec3f_vec3f_vec3f)(vec3f, const vec3f, const vec3f);
+typedef float* (*testfp_vec3f_vec3f_vec3f)(vec3f, vec3f, vec3f);
 
 float dotProduct(const vec3f v1, const vec3f v2) {
     return (v1[0] * v2[0]) + (v1[1] * v2[1]) + (v1[2] + v1[2]);
 }
 
 // cross product isnt finished it doesnt actually evaluate correctly
-float* crossProduct(vec3f result, const vec3f v1, const vec3f v2) {
-    result[0] = v1[0] + v2[0];
+float* crossProduct(vec3f result, vec3f v1, vec3f v2) {
+    result[0] = (v1[1] + v2[2]) - (v1[2] * v2[1]);
+    result[1] = (v1[2] + v2[0]) - (v1[0] * v2[2]);
+    result[2] = (v1[0] + v2[1]) - (v1[1] * v2[0]);
 
     return result;
 }
@@ -103,59 +105,92 @@ float* crossProduct(vec3f result, const vec3f v1, const vec3f v2) {
 // this is a struct that encapsulates one test object, make something iterate through test objects and call them all and collect results
 typedef struct unit_test_t {
     void* func;
-    void* args;
     void* expected;
+    void* args;
     int (*test)(void* func, void* args, void* expected);
 } unit_test_t;
 
-bool initTest_f_v3f_v3f(testf_vec3f_vec3f* ptr) 
+
+bool execTest_f_v3f_v3f(testf_vec3f_vec3f ptr, ...)
 {
-    ptr = malloc(sizeof(testf_vec3f_vec3f));
+    va_list args;
+    va_start(args, ptr);
+    float expected = va_arg(args, float);
+    //vec3f v1 = *va_arg(args, float*);
+    //vec3f v2 = *va_arg(args, float*);
+    float* v1 = va_arg(args, float*);
+    float* v2 = va_arg(args, float*);
+
+    va_end(args);
+    float result = (*ptr)(v1, v2);
+
+    return result == expected;
 }
 
-bool initTest_fp_v3f_v3f_v3f(testfp_vec3f_vec3f_vec3f* ptr) 
+bool execTest_fp_v3f_v3f_v3f(testfp_vec3f_vec3f_vec3f ptr, .../*void* expected, vec3f* out, const vec3f v1, const vec3f v2*/)
 {
-    ptr = malloc(sizeof(testfp_vec3f_vec3f_vec3f));
+    // collect arguments from ...
+    va_list args;
+    va_start(args, 2);
+
+    float* expected = va_arg(args, float*);
+    float** out = va_arg(args, float**);
+    float* v1 = va_arg(args, float*);
+    float* v2 = va_arg(args, float*);
+
+
+    //vec3f expected = va_arg(args, float*);
+    //vec3f* out = va_arg(args, float*);
+    //vec3f v1 = va_arg(args, float);
+    //vec3f v2 = va_arg(args, float);
+    va_end(args);
+    // execute
+
+    float* result = (*ptr)(*out, v1, v2);
+
+    // check if all parameters are equal
+    return (expected == result);
 }
 
-bool execTest_f_v3f_v3f(testf_vec3f_vec3f* ptr) 
-{
-
-}
-
-bool execTest_fp_v3f_v3f_v3f(testfp_vec3f_vec3f_vec3f* ptr)
-{
-
-}
-
-bool deallocTest_f_v3f_v3f(testf_vec3f_vec3f ptr)
-{
-    free(ptr);
-}
-
-bool deallocTest_fp_v3f_v3f_v3f(testfp_vec3f_vec3f_vec3f* ptr)
-{
-    free(ptr);
-}
-
-float(*initTest_f_v3f_v3f)(float*, float*);
-float(*initTest_fp_v3f_v3f_v3f)(float*, float*, float*);
-
-#define initializeTest(X) _Generic((X), \
+// the idea for architecting this was from professor buckstein's office hours
+#define initializeTest(X, ...) _Generic((X), \
     testf_vec3f_vec3f: initTest_f_v3f_v3f,\
-    testfp_vec3f_vec3f_vec3f: initTest_fp_v3f_v3f_v3f\
-    )(X)
+    testfp_vec3f_vec3f_vec3f: initTest_fp_v3f_v3f_v3f \
+    )(X, __VA_ARGS__)
 
-#define executeTest(X) _Generic((X), \
+#define executeTest(X, ...) _Generic((X), \
     testf_vec3f_vec3f: execTest_f_v3f_v3f,\
     testfp_vec3f_vec3f_vec3f: execTest_fp_v3f_v3f_v3f \
-    )(X)
+    )(X, __VA_ARGS__)
 
-#define cleanTest(X) _Generic((X),\
-    testf_vec3f_vec3f: deallocTest_f_v3f_v3f, \
-    testfp_vec3f_vec3f_vec3f: deallocTest_fp_v3f_v3f_v3f \
-    )(X)
-    
+void test_unit_tests(void)
+{
+    // iterate over each unit test and determine if passed / failed
+    /*
+    for (size_t i = 0; i < count; i++) {
+        const unit_test_t* test = &tests[i];
+
+        int passed = test->test(test->func, test->args, test->expected);
+        printf(passed);
+    }*/
+
+    vec3f v1 = { 2, 3, 5 };
+    vec3f v2 = { 4, 1, 2 };
+    float expected = 21;
+
+    testf_vec3f_vec3f dot = dotProduct;
+    testfp_vec3f_vec3f_vec3f cross = crossProduct;
+
+    executeTest(dot, expected, v1, v2);
+
+    vec3f out = { 0, 0, 0 };
+    vec3f v1_2 = { 0, 1, 0 };
+    vec3f v2_2 = { 1, 0, 0 };
+    vec3f expected_2 = {0, 0, -1 };
+    vec3f* pOut = &out;
+
+    executeTest(cross, expected_2, pOut, v1_2, v2_2);
+}
 
 int worker_thread_work(worker_t* worker)
 {
@@ -192,17 +227,6 @@ void spawn_worker(worker_t* worker, manager_t* manager, uint64_t id) {
     worker->manager = manager;
     worker->id = id;
     thrd_create(&worker->thread, &worker_thread_entry, worker);
-}
-
-void test_unit_tests(unit_test_t* tests, size_t count) 
-{
-    // iterate over each unit test and determine if passed / failed
-    for (size_t i = 0; i < count; i++) {
-        const unit_test_t* test = &tests[i];
-
-        int passed = test->test(test->func, test->args, test->expected);
-        printf(passed);
-    }
 }
 
 __declspec(spectre(nomitigation))
@@ -270,6 +294,7 @@ int WINAPI WinMain(
         cat_dylib_unload(dylib);
     }
 
+    test_unit_tests();
     test_tasks();
 
     cat_console_destroy();
