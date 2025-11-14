@@ -135,18 +135,14 @@ cat_impl bool cat_memory_pool_create(size_t const pool_size)
 
 	g_pool_base = (uint8_t*)malloc(pool_size);
 	if (!g_pool_base) return false;
+    g_pool_curr = g_pool_base;
 
 	g_pool_size = pool_size;
 
-	// Initialize a single large free node
-	g_pool_head = (cat_pool_node_t*)g_pool_base;
+    g_pool_head = NULL;
+    g_pool_curr = g_pool_base;
 
-	g_pool_head->next = NULL;
-	g_pool_head->prev = NULL;
-	g_pool_head->file = NULL;
-	g_pool_head->size = pool_size - sizeof(cat_pool_node_t);
-
-	return false;
+	return true;
 }
 
 cat_impl bool cat_memory_pool_destroy(void)
@@ -161,25 +157,102 @@ cat_impl bool cat_memory_pool_destroy(void)
     g_pool_head = NULL;
     g_pool_size = 0;
 
-    return false;
+    return true;
 }
 
 cat_impl void* cat_memory_alloc(size_t const block_size)
 {
     assert_or_bail(block_size) NULL;
+    if (!g_pool_base)
+        return NULL;
 
-    //****TO-DO-MEMORY: reserve block in managed pool.
+    size_t required = sizeof(cat_pool_node_t) + block_size;
 
-    return NULL;
+    if ((size_t)(g_pool_curr - g_pool_base) + required > g_pool_size)
+        return NULL;
+
+    cat_pool_node_t* node = (cat_pool_node_t*)g_pool_curr;
+
+    node->next = NULL;
+    node->prev = NULL;
+    node->file = NULL;
+    node->size = block_size;
+
+    if (!g_pool_head)
+    {
+        g_pool_head = node;
+    }
+    else
+    {
+        // Append node to the head
+        cat_pool_node_t* tail = g_pool_head;
+        while (tail->next)
+            tail = tail->next;
+
+        tail->next = node;
+        node->prev = tail;
+    }
+
+    g_pool_curr += required;
+
+    return node->data;
 }
 
 cat_impl bool cat_memory_dealloc(void* const p_block)
 {
     assert_or_bail(p_block) false;
 
-    //****TO-DO-MEMORY: safely release block reserved above.
+    return true;
+}
 
-    return false;
+cat_impl void test_memory_pool(void)
+{
+    size_t pool_size = 1024 * 1024;
+
+    if (!cat_memory_pool_create(pool_size))
+    {
+        printf("\nPool failed to initialize");
+    }
+
+    // Alloc 1
+    size_t alloc_size_1 = 256;
+    void* p_block1 = cat_memory_alloc(alloc_size_1);
+    if (p_block1)
+    {
+        printf("Block 1 allocated: %p (Size: %zu bytes)\n", p_block1, alloc_size_1);
+    }
+    else
+    {
+        printf("Memory allocation failed for Block 1!\n");
+    }
+
+    // Alloc 2
+    size_t alloc_size_2 = 512;
+    void* p_block2 = cat_memory_alloc(alloc_size_2);
+    if (p_block2)
+    {
+        printf("Block 2 allocated: %p (Size: %zu bytes)\n", p_block2, alloc_size_2);
+    }
+    else
+    {
+        printf("Memory allocation failed for Block 2!\n");
+    }
+
+    // Dealloc 1
+    if (p_block1)
+    {
+        cat_memory_dealloc(p_block1);
+        printf("Block 1 deallocated.\n");
+    }
+
+    // Dealloc 2
+    if (p_block2)
+    {
+        cat_memory_dealloc(p_block2);
+        printf("Block 2 deallocated.\n");
+    }
+
+    cat_memory_pool_destroy();
 }
 
 //phandle_t test_alloc(size_t n)

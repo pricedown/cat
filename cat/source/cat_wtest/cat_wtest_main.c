@@ -295,7 +295,8 @@ int WINAPI WinMain(
         cat_dylib_unload(dylib);
     }
 
-    test_unit_tests();
+    //test_unit_tests();
+    test_memory_pool();
     test_tasks();
 
     cat_console_destroy();

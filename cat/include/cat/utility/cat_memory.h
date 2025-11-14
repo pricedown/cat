@@ -27,19 +27,22 @@
 
 cat_interface_begin;
 
+cat_decl void test_memory_pool(void);
+
 typedef struct cat_pool_node_s {
-	cat_pool_node_t* next;
-	cat_pool_node_t* prev;
+	struct cat_pool_node_s* next;
+	struct cat_pool_node_s* prev;
 	char* file;
 	// uint32_t line
 	// uint32_t mode
 	size_t size;
-	uint8_t data[];
+	uint8_t* data;
 } cat_pool_node_t;
 
 static uint8_t* g_pool_base = NULL;
-static size_t   g_pool_size = 0;
-static cat_pool_node_t* g_pool_head = NULL;
+static size_t   g_pool_size = 0; // total size of pool in bytes
+static cat_pool_node_t* g_pool_head = NULL; // head of linked list 
+static uint8_t* g_pool_curr = NULL; // current position in pool in memory
 
 // handle stuff
 typedef struct cat_memory_handle_t
