@@ -80,14 +80,13 @@ typedef float vec3f[3];
 // this is defining a type of function that accepts two parameters
 // typedef is a synonym for an existing type
 typedef float (*testf_vec3f_vec3f)(const vec3f, const vec3f);
-typedef float* (*testfp_vec3f_vec3f_vec3f)(vec3f, vec3f, vec3f);
+typedef float* (*testfp_vec3f_vec3f_vec3f)(vec3f, const vec3f, const vec3f);
 
 float dotProduct(const vec3f v1, const vec3f v2) {
     return (v1[0] * v2[0]) + (v1[1] * v2[1]) + (v1[2] + v1[2]);
 }
 
-// cross product isnt finished it doesnt actually evaluate correctly
-float* crossProduct(vec3f result, vec3f v1, vec3f v2) {
+float* crossProduct(vec3f result, const vec3f v1, const vec3f v2) {
     result[0] = (v1[1] + v2[2]) - (v1[2] * v2[1]);
     result[1] = (v1[2] + v2[0]) - (v1[0] * v2[2]);
     result[2] = (v1[0] + v2[1]) - (v1[1] * v2[0]);
@@ -127,26 +126,18 @@ bool execTest_f_v3f_v3f(testf_vec3f_vec3f ptr, ...)
     return result == expected;
 }
 
-bool execTest_fp_v3f_v3f_v3f(testfp_vec3f_vec3f_vec3f ptr, .../*void* expected, vec3f* out, const vec3f v1, const vec3f v2*/)
+bool execTest_fp_v3f_v3f_v3f(testfp_vec3f_vec3f_vec3f ptr, ...)
 {
     // collect arguments from ...
     va_list args;
     va_start(args, 2);
-
     float* expected = va_arg(args, float*);
-    float** out = va_arg(args, float**);
+    float* out = va_arg(args, float*);
     float* v1 = va_arg(args, float*);
     float* v2 = va_arg(args, float*);
-
-
-    //vec3f expected = va_arg(args, float*);
-    //vec3f* out = va_arg(args, float*);
-    //vec3f v1 = va_arg(args, float);
-    //vec3f v2 = va_arg(args, float);
     va_end(args);
-    // execute
 
-    float* result = (*ptr)(*out, v1, v2);
+    float* result = (*ptr)(out, v1, v2);
 
     // check if all parameters are equal
     return (expected == result);
@@ -183,13 +174,12 @@ void test_unit_tests(void)
 
     executeTest(dot, expected, v1, v2);
 
-    vec3f out = { 0, 0, 0 };
     vec3f v1_2 = { 0, 1, 0 };
     vec3f v2_2 = { 1, 0, 0 };
     vec3f expected_2 = {0, 0, -1 };
-    vec3f* pOut = &out;
+    vec3f out = { 0, 0, 0 };
 
-    executeTest(cross, expected_2, pOut, v1_2, v2_2);
+    executeTest(cross, expected_2, out, v1_2, v2_2);
 }
 
 int worker_thread_work(worker_t* worker)
